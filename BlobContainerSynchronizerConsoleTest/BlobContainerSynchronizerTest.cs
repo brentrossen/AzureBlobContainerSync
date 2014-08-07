@@ -35,14 +35,33 @@ namespace BlobContainerSynchronizerConsoleTest
             string storageConnectionString = CloudConfigurationManager.GetSetting("StorageConnectionString");
             const string containerName = "synctest";
 
+            Task uploadBlobsTask = UploadBlobs(storageConnectionString, containerName);
+
             var containerSyncPeriodicTask = StartContainerSyncTask(storageConnectionString, containerName);
 
             var blobSyncPeriodicTask = StartBlobSyncTask(storageConnectionString, containerName);
 
-            Task uploadBlobsTask = UploadBlobs(storageConnectionString, containerName);
-
             // Use WhenAny so that an exception in any of the tasks is thrown immediately
             await Task.WhenAny(containerSyncPeriodicTask, blobSyncPeriodicTask, uploadBlobsTask);
+        }
+
+        /// <summary>
+        /// Downloads the specified container
+        /// </summary>
+        private async Task StartContainerSyncTask(string storageConnectionString, string containerName)
+        {
+            string containerDestinationDir = Path.Combine(Environment.CurrentDirectory, "ContainerDownloadedFiles");
+            Directory.CreateDirectory(containerDestinationDir);
+
+            var containerSynchronizer = new ContainerSynchronizer(storageConnectionString, containerName,
+                containerDestinationDir)
+            {
+                BlobSyncResultAction =
+                    result => Console.WriteLine("Blob Downloaded (container sync) -- {0}", result)
+            };
+
+            // This will not return unless there is an exception
+            await containerSynchronizer.SyncPeriodicAsync(SynchronizationFrequency);
         }
 
         /// <summary>
@@ -67,25 +86,6 @@ namespace BlobContainerSynchronizerConsoleTest
         }
 
         /// <summary>
-        /// Downloads the specified container
-        /// </summary>
-        private async Task StartContainerSyncTask(string storageConnectionString, string containerName)
-        {
-            string containerDestinationDir = Path.Combine(Environment.CurrentDirectory, "ContainerDownloadedFiles");
-            Directory.CreateDirectory(containerDestinationDir);
-
-            var containerSynchronizer = new ContainerSynchronizer(storageConnectionString, containerName,
-                containerDestinationDir)
-            {
-                BlobSyncResultAction =
-                    result => Console.WriteLine("Blob Downloaded (container sync) -- {0}", result)
-            };
-
-            // This will not return unless there is an exception
-            await containerSynchronizer.SyncPeriodicAsync(SynchronizationFrequency);
-        }
-
-        /// <summary>
         /// Uploads block blobs into the specified container.
         /// A blob is uploaded every 0-19 seconds
         /// and given a random name 0-9 and value 0-999
@@ -100,7 +100,7 @@ namespace BlobContainerSynchronizerConsoleTest
                 RetryPolicy = new ExponentialRetry()
             };
             var blobContainer = cloudBlobClient.GetContainerReference(containerName);
-
+            await blobContainer.CreateIfNotExistsAsync();
             while (true)
             {
                 await Task.Delay(TimeSpan.FromSeconds(random.Next(0, 20)));
