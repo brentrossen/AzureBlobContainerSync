@@ -4,7 +4,7 @@ AzureBlobContainerSync
 BlobContainerSynchronizer and BlobSynchronizer manage keeping local files up to date with what's stored in your Azure Storage container/blob. The system uses the .NET 4.5+ async-await pattern to keep the thread requirements of the synchronization lightweight.
 
 # Getting Started
-1) Reference the BlobContainerSynchronizer.dll either by cloning the repo and building the code yourself or referencing the NuGet package (NuGet package coming soon).
+1) Reference the BlobContainerSynchronizer.dll either by referencing the NuGet package (https://www.nuget.org/packages/AzureBlobContainerSync/) or cloning the repo and building the code.
 
 2) Create a BlobSynchronizer or ContainerSynchronizer
 
@@ -13,7 +13,8 @@ var blobSynchronizer = new BlobSynchronizer(storageConnectionString, containerNa
 	blobName, filePath)
 {
 	BlobSyncResultAction = 
-		result => Console.WriteLine("Blob Downloaded (single blob sync) -- {0}", result)
+		result => Console.WriteLine(
+			"Blob Downloaded (single blob sync) -- {0}", result)
 };
 ```
 
@@ -22,7 +23,8 @@ var containerSynchronizer = new ContainerSynchronizer(storageConnectionString,
 	containerName, containerDestinationDir)
 {
 	BlobSyncResultAction =
-		result => Console.WriteLine("Blob Downloaded (container sync) -- {0}", result)
+		result => Console.WriteLine(
+			"Blob Downloaded (container sync) -- {0}", result)
 };
 ```
 
