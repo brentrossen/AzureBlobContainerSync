@@ -9,7 +9,8 @@ BlobContainerSynchronizer and BlobSynchronizer manage keeping local files up to 
 2) Create a BlobSynchronizer or ContainerSynchronizer
 
 ```
-var blobSynchronizer = new BlobSynchronizer(storageConnectionString, containerName, blobName, filePath)
+var blobSynchronizer = new BlobSynchronizer(storageConnectionString, containerName, 
+	blobName, filePath)
 {
 	BlobSyncResultAction = 
 		result => Console.WriteLine("Blob Downloaded (single blob sync) -- {0}", result)
@@ -17,7 +18,8 @@ var blobSynchronizer = new BlobSynchronizer(storageConnectionString, containerNa
 ```
 
 ```
-var containerSynchronizer = new ContainerSynchronizer(storageConnectionString, containerName, containerDestinationDir)
+var containerSynchronizer = new ContainerSynchronizer(storageConnectionString, 
+	containerName, containerDestinationDir)
 {
 	BlobSyncResultAction =
 		result => Console.WriteLine("Blob Downloaded (container sync) -- {0}", result)
@@ -29,13 +31,15 @@ var containerSynchronizer = new ContainerSynchronizer(storageConnectionString, c
 ```
 // Checks for new data every 10 seconds
 // This will not return unless there is an exception
-await blobSynchronizer.SyncPeriodicAsync(delayBetweenSynchronizations: TimeSpan.FromSeconds(10));
+await blobSynchronizer.SyncPeriodicAsync(
+	delayBetweenSynchronizations: TimeSpan.FromSeconds(10));
 ```
 
 ```
 // Checks for new data every 10 seconds
 // This will not return unless there is an exception
-await containerSynchronizer.SyncPeriodicAsync(delayBetweenSynchronizations: TimeSpan.FromSeconds(10));
+await containerSynchronizer.SyncPeriodicAsync(
+	delayBetweenSynchronizations: TimeSpan.FromSeconds(10));
 ```
 
 That's it. Now your local data will stay up to date whenever the cloud data is updated.
