@@ -28,24 +28,24 @@ namespace BlobContainerSynchronizer
         }
 
         /// <summary>
-        /// Checks if the etag is new or old.
-        /// If it is a new etag, the etag in the file will be updated.
-        /// All entity names in the etags set should be considered unique.
-        /// <remarks>This method is thread safe.</remarks>
+        /// Reads the etags file from disk
         /// </summary>
-        /// <param name="entityName">The name of the entity (such as blob name)</param>
-        /// <param name="etag">The etag to check</param>
-        /// <returns>Returns true if the etag is either not in the list or is a new etag.</returns>
-        public bool IsNewEtagAndUpdate(string entityName, string etag)
+        public static async Task<Etags> ReadEtagsAsync(string filePath)
         {
-            if (entityName == null) throw new ArgumentNullException("entityName");
-            if (etag == null) throw new ArgumentNullException("etag");
+            if (filePath == null) throw new ArgumentNullException("filePath");
 
-            string value;
-            if (etagsDictionary.TryGetValue(entityName, out value) && value == etag) return false;
+            if (!File.Exists(filePath)) return new Etags();
 
-            etagsDictionary[entityName] = etag;
-            return true;
+            // deserialize from disk
+            using (var etagFileStream = File.Open(filePath, FileMode.OpenOrCreate))
+            {
+                using (var fileReader = new StreamReader(etagFileStream))
+                {
+                    string dictionaryJson = await fileReader.ReadToEndAsync();
+                    var dictionary = JsonConvert.DeserializeObject<ConcurrentDictionary<string, string>>(dictionaryJson);
+                    return new Etags(dictionary);
+                }
+            }
         }
 
         /// <summary>
@@ -68,24 +68,24 @@ namespace BlobContainerSynchronizer
         }
 
         /// <summary>
-        /// Reads the etags file from disk
+        /// Checks if the etag is new or old.
+        /// If it is a new etag, the etag in the file will be updated.
+        /// All entity names in the etags set should be considered unique.
+        /// <remarks>This method is thread safe.</remarks>
         /// </summary>
-        public static async Task<Etags> ReadEtagsAsync(string filePath)
+        /// <param name="entityName">The name of the entity (such as blob name)</param>
+        /// <param name="etag">The etag to check</param>
+        /// <returns>Returns true if the etag is either not in the list or is a new etag.</returns>
+        public bool IsNewEtagAndUpdate(string entityName, string etag)
         {
-            if (filePath == null) throw new ArgumentNullException("filePath");
+            if (entityName == null) throw new ArgumentNullException("entityName");
+            if (etag == null) throw new ArgumentNullException("etag");
 
-            if (!File.Exists(filePath)) return new Etags();
+            string value;
+            if (etagsDictionary.TryGetValue(entityName, out value) && value == etag) return false;
 
-            // deserialize from disk
-            using (var etagFileStream = File.Open(filePath, FileMode.OpenOrCreate))
-            {
-                using (var fileReader = new StreamReader(etagFileStream))
-                {
-                    string dictionaryJson = await fileReader.ReadToEndAsync();
-                    var dictionary = JsonConvert.DeserializeObject<ConcurrentDictionary<string, string>>(dictionaryJson);
-                    return new Etags(dictionary);
-                }
-            }
+            etagsDictionary[entityName] = etag;
+            return true;
         }
     }
 }

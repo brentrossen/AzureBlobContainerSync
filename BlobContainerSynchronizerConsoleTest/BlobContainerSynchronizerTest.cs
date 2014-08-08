@@ -46,6 +46,32 @@ namespace BlobContainerSynchronizerConsoleTest
         }
 
         /// <summary>
+        /// Uploads block blobs into the specified container.
+        /// A blob is uploaded every 0-19 seconds
+        /// and given a random name 0-9 and value 0-999
+        /// </summary>
+        private static async Task UploadBlobs(string storageConnectionString, string containerName)
+        {
+            var random = new Random((int)DateTimeOffset.UtcNow.Ticks);
+            var cloudStorageAccount = CloudStorageAccount.Parse(storageConnectionString);
+            var cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
+            cloudBlobClient.DefaultRequestOptions = new BlobRequestOptions
+            {
+                RetryPolicy = new ExponentialRetry()
+            };
+            var blobContainer = cloudBlobClient.GetContainerReference(containerName);
+            await blobContainer.CreateIfNotExistsAsync();
+            while (true)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(random.Next(0, 20)));
+                int blobName = random.Next(0, 10);
+                Debug.WriteLine("Uploading blob {0}", blobName);
+                CloudBlockBlob blob = blobContainer.GetBlockBlobReference(blobName.ToString());
+                await blob.UploadTextAsync(random.Next(0, 1000).ToString());
+            }
+        }
+
+        /// <summary>
         /// Downloads the specified container
         /// </summary>
         private async Task StartContainerSyncTask(string storageConnectionString, string containerName)
@@ -83,32 +109,6 @@ namespace BlobContainerSynchronizerConsoleTest
 
             // This will not return unless there is an exception
             await blobSynchronizer.SyncPeriodicAsync(SynchronizationFrequency);
-        }
-
-        /// <summary>
-        /// Uploads block blobs into the specified container.
-        /// A blob is uploaded every 0-19 seconds
-        /// and given a random name 0-9 and value 0-999
-        /// </summary>
-        private static async Task UploadBlobs(string storageConnectionString, string containerName)
-        {
-            var random = new Random((int)DateTimeOffset.UtcNow.Ticks);
-            var cloudStorageAccount = CloudStorageAccount.Parse(storageConnectionString);
-            var cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-            cloudBlobClient.DefaultRequestOptions = new BlobRequestOptions
-            {
-                RetryPolicy = new ExponentialRetry()
-            };
-            var blobContainer = cloudBlobClient.GetContainerReference(containerName);
-            await blobContainer.CreateIfNotExistsAsync();
-            while (true)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(random.Next(0, 20)));
-                int blobName = random.Next(0, 10);
-                Debug.WriteLine("Uploading blob {0}", blobName);
-                CloudBlockBlob blob = blobContainer.GetBlockBlobReference(blobName.ToString());
-                await blob.UploadTextAsync(random.Next(0, 1000).ToString());
-            }
         }
     }
 }
